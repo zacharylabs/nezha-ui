@@ -9,9 +9,19 @@
  */
 
 (function () {
-    // 注入样式
-    const sakanaStyle = document.createElement('style');
-    sakanaStyle.textContent = `
+    'use strict';
+
+    // ========== 配置 ==========
+    const CONFIG = {
+        scale: 0.5,
+        sakanaUrl: 'https://cdn.jsdelivr.net/npm/sakana@1.0.8',
+        retryDelay: 100,
+        maxRetries: 50
+    };
+
+    // ========== 注入样式 ==========
+    const style = document.createElement('style');
+    style.textContent = `
         html .chisato-box {
             position: fixed;
             right: 0;
@@ -25,10 +35,21 @@
             transform-origin: 0% 100%;
         }
     `;
-    document.head.appendChild(sakanaStyle);
+    document.head.appendChild(style);
 
-    // 主函数
-    function initSakana() {
+    // ========== 等待 body 可用 ==========
+    function waitForBody(callback, retries = 0) {
+        if (document.body) {
+            callback();
+        } else if (retries < CONFIG.maxRetries) {
+            setTimeout(() => waitForBody(callback, retries + 1), CONFIG.retryDelay);
+        } else {
+            console.error('[Sakana Widget] 等待 body 超时');
+        }
+    }
+
+    // ========== 初始化 ==========
+    function init() {
         // 创建容器
         const chisatoBox = document.createElement('div');
         chisatoBox.className = 'chisato-box';
@@ -38,21 +59,47 @@
         takinaBox.className = 'takina-box';
         document.body.appendChild(takinaBox);
 
+        // 检查是否已加载 Sakana
+        if (window.Sakana) {
+            initCharacters();
+            return;
+        }
+
         // 加载 Sakana 库
-        const sakanaScript = document.createElement('script');
-        sakanaScript.src = 'https://cdn.jsdelivr.net/npm/sakana@1.0.8';
-        sakanaScript.onload = function () {
-            Sakana.init({ el: '.chisato-box', character: 'chisato', scale: 0.5 });
-            Sakana.init({ el: '.takina-box', character: 'takina', scale: 0.5 });
-            console.log('[Nezha UI] ✓ Sakana 石蒜模拟器已加载');
-        };
-        document.head.appendChild(sakanaScript);
+        const script = document.createElement('script');
+        script.src = CONFIG.sakanaUrl;
+        script.onload = initCharacters;
+        script.onerror = () => console.error('[Sakana Widget] 加载 Sakana 库失败');
+        document.head.appendChild(script);
     }
 
-    // DOM 就绪检查
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initSakana);
-    } else {
-        initSakana();
+    // ========== 初始化角色 ==========
+    function initCharacters() {
+        if (!window.Sakana) {
+            console.error('[Sakana Widget] Sakana 未定义');
+            return;
+        }
+
+        try {
+            Sakana.init({
+                el: '.chisato-box',
+                character: 'chisato',
+                scale: CONFIG.scale
+            });
+
+            Sakana.init({
+                el: '.takina-box',
+                character: 'takina',
+                scale: CONFIG.scale
+            });
+
+            console.log('[Nezha UI] ✓ Sakana 石蒜模拟器已加载');
+        } catch (e) {
+            console.error('[Sakana Widget] 初始化失败:', e);
+        }
     }
+
+    // ========== 启动 ==========
+    waitForBody(init);
+
 })();
