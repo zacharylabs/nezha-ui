@@ -1,212 +1,165 @@
-/*!
- * 樱花飘落特效 - 优化版
- * 作者: Zachary
- * GitHub: https://github.com/zacharylabs/nezha-ui
- * 功能: 页面樱花飘落动画
- * 优化: 可见性检测、性能优化、bug修复、封装隔离
+/**
+ * 樱花飘落特效 - 哪吒探针优化版
+ * @author zacharylabs
+ * @link https://github.com/zacharylabs/nezha-ui
+ * @license MIT
+ * 
+ * 使用方法：
+ * <script src="https://cdn.jsdelivr.net/gh/zacharylabs/nezha-ui@main/sakura-fall.js"></script>
+ * 
+ * 控制 API：
+ * SakuraEffect.start()  - 启动特效
+ * SakuraEffect.stop()   - 停止特效
+ * SakuraEffect.toggle() - 切换显示/隐藏
  */
-(function (window, document) {
+(function() {
     'use strict';
 
-    // 配置
-    const CONFIG = {
-        particleCount: 30,     // 樱花数量（原版50，优化为30）
-        minSize: 0.5,          // 最小尺寸
-        maxSize: 1.0,          // 最大尺寸
-        fallSpeed: 1.5,        // 下落速度
-        windSpeed: -1.5,       // 风速（负值向左）
-        zIndex: 9998           // z-index
+    var config = {
+        particleCount: 30,
+        maxSize: 40,
+        speedY: 1.5,
+        speedX: 0.5,
+        rotationSpeed: 0.03
     };
 
-    // 樱花图片（base64内联）
-    const SAKURA_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAACXBIWXMAAAsTAAALEwEAmpwYAAAF8WlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxNDIgNzkuMTYwOTI0LCAyMDE3LzA3LzEzLTAxOjA2OjM5ICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIi8+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz5x7yHQAAADhklEQVRYhe2YS0hUURjHf3fuzOioo2ZpaVpZUREVLYKgRYsWQdCqaNOiB0G7NkG7aNMuKGhXtGlVi6BFD4haBEUFRUQQFVE9NEuz0kpznFGn6dw5LWbGeTh3Hs7cQf+rO+d85/+d7zvfdy5cYQlLSJFQpgf4X4K1FMuKxeKJYaYGlHQPmFGsD6EwQCOMPUJxDbgHNAF1wEngQiaOlEiCxRDaww8hxVfAZWAYaAHOAAck700ogqL0Y9G89L8EHsMwtBo4BNwH6oGjwFUpcgeqZT/LqoJFc94vAZ1AKVAPnAYuSVFXwxD0IaR7tC0dZRDLUdYlI4o9MFYF7EARuwH0JqPZHoJu4iFYDD3rVEYnxwKfgY4IorJA8AvRbwtmC/ADaAaOA9ekyCVoho0gihrXqkx6EWwH2oCdkudWQHUFXwGuAM+TETQqAn2B/yXIk6QzQBtwQYpUAg1AAbBOZb4cW/AnPiVa7n2xKNUKc+dMwBrB/CDaFLgphR0CfvmxfySwjoBM0D6xHFXxdGA/8hnZBxwGlsuQe5L7Ci7Sd+D7NMJuT7YCLACOAB+Bg1LkJqAKeJzCvheiLfF+PJ8tMH6XYE5B5T3gB7BVspwAdgGfI4h+J9bvW8B7oCHR8VSAH7HbUxXTVxW0EdiLYtIJoFDy3AGE4r2kJmX8PJ9kfBZL8BGwDdiMsk45JJnvAB1RRNNd8H1sRNUSz7RAbHwYaAXWAI+kyBrgDLAnGcGCFBQslpBvUexe4wCwFbglhd4FyqKu9wMd0WzrpAgYIz6b5ARHgWNS5E0UM7RcJh2IV2e7PdiJYjIHuAlsJzibeAx6JxhmB1AI7IqX52xJYBbBsShSNSjmXAfYn+r9eMfiVbM3WM/JQrIJrA+TqT68AYJxTGLv7xHMC5Jt+3GSjyeAHyhmPAUcw69FWYCyCj4CdiQy6Gc01gdUXlDJmSjYtTNeBsQy3oCd8cZFLYrJCcD+RPYlI3hPsl1DFGtcwL54Y5L1xM54PYDjsTwl45mAYJjMZDxRMB5Jydy0xkKy5U2WM1m+KJgoGGu/JAsmsjbZ9alIluP5MN7EZLnJ8pPZ70um/wewKVFOovsS5UyUP1X9fglJl5+oL0VOsvx0y0+1/5cyOTbR+om+ACaS5Ui0fjrLSLd/Inb7M/HSHlhE+YLLAJeBN0B9sD/wVjjCaeBEIoJLWMK/4C8xz5dhpYJd5AAAAABJRU5ErkJggg==';
+    var animationId = null;
+    var isRunning = false;
+    var canvas = null;
+    var ctx = null;
+    var sakuraList = null;
+    var img = new Image();
 
-    let canvas, ctx;
-    let sakuraList = [];
-    let animationId = null;
-    let isVisible = true;
-    let img = new Image();
+    img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUgAAAEwCAYAAADVZeifAAAACXBIWXMAAACYAAAAmAGiyIKwAAAHG2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxNDIgNzkuMTYwOTI0LCAyMDE3LzA3LzEzLTAxOjA2OjM5ICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXBSaWdodHM9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9yaWdodHMvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIiB4bWxuczpwaG90b3Nob3A9Imh0dHA6Ly9ucy5hZG9iZS5jb20vcGhvdG9zaG9wLzEuMC8iIHhtcFJpZ2h0czpNYXJrZWQ9IkZhbHNlIiB4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6NDFDMjQxQjY2MjA2ODExODA4M0QyMTYwMDM5NTU0NCIgeG1wTU06RG9jdW1lbnRJRD0iYWRvYmU6ZG9jaWQ6cGhvdG9zaG9wOjM0NWM5ZWI4LTg0NzgtMWQ0Ny04ZGMyLTJkOTI4Y2FhNjFlZCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpiMDM3ZmIwYi01NTkyLTFiNGQtYmNkZC05ZTg0YTEwMmIwYzYiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIChXaW5kb3dzKSIgeG1wOkNyZWF0ZURhdGU9IjIwMTgtMDUtMDVUMTQ6NDk6MzcrMDg6MDAiIHhtcDpNb2RpZnlEYXRlPSIyMDE4LTA1LTA5VDE0OjUxOjI1KzA4OjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDE4LTA1LTA5VDE0OjUxOjI1KzA4OjAwIiBkYzpmb3JtYXQ9ImltYWdlL3BuZyIgcGhvdG9zaG9wOkNvbG9yTW9kZT0iMyIgcGhvdG9zaG9wOklDQ1Byb2ZpbGU9InNSR0IgSUVDNjE5NjYtMi4xIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6MTI1ZWVhNy0xMmNkLTE2NDQtOGQwMy1hYzkxNmUwMWQ0NWMiIHN0UmVmOmRvY3VtZW50SUQ9InV1aWQ6RDIwNUFGNjZCRDlFNTExOUM5REMwMzg2RjlEQjFGNyIvPiA8eG1wTU06SGlzdG9yeT4gPHJkZjpTZXE+IDxyZGY6bGkgc3RFdnQ6YWN0aW9uPSJzYXZlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDphYmM2MjMzLWE5Y2QtY2I0NC04NWJiLTNlODIyMTBiYjEyNiIgc3RFdnQ6d2hlbj0iMjAxOC0wNS0wOVQxNDo1MToyNSswODowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTggKFdpbmRvd3MpIiBzdEV2dDpjaGFuZ2VkPSIvIi8+IDxyZGY6bGkgc3RFdnQ6YWN0aW9uPSJzYXZlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDpiMDM3ZmIwYi01NTkyLTFiNGQtYmNkZC05ZTg0YTEwMmIwYzYiIHN0RXZ0OndoZW49IjIwMTgtMDUtMDlUMTQ6NTE6MjUrMDg6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE4IChXaW5kb3dzKSIgc3RFdnQ6Y2hhbmdlZD0iLyIvPiA8L3JkZjpTZXE+IDwveG1wTU06SGlzdG9yeT4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz5cKkGgAACkHElEQVR4nO3dmSI8u2LIipLnMHosnc595jyxhjSg1oggn/EWO+SP8B34JhRyWCItk1at7886MBnBUqg8TnH5P/3/q8bwv2zA+TfZ7HtvKbY4ScCOxCU4EaYE04hxb0hOYgEATAJTsGYkP2IQQBocAkkAGMBQcdgA47HA3aeg0cQkhmOGRhEZAMoIpdDhiREQYzXJQBDSQwygFGLdwET2/3c2luLx9fXzjhKk4hs8QTmsd2OAiHkIR4ZmFKxNMRGI7C5xPxt3+Lv+0GvL47/r/fBgBCJpAcYPwVAICbsPsE/v0VSJl49if8+/C/IEMwCIQBcCQUBeBlOOFi4K5wanyGcgAiPEe5XSApInJsllCQkAVQNFStpTcUjoakxtNZqJIwtIx2XigpUyaG2xSdvP9/+aPy3zoORuorKVD7OCoZfLxAUgMhegrEBYf1p8x2pYdxUKITVEXIBhewFit21bG0D+HWoQDgJwiERgF422CFNgpsh5YypHPck4S7YEEcjQQhAsoRj/ixARHiBOVpAhsthNkCKPZwCvNvTB1Ugi7/dnpunr9mYJjoGGWLOooVUAcDbAWV6CleN9sxJwzOeE/lczgakQ4OkzCNhBuwOwo/n+M+u4Pwsbd4dQLciJefwvRCLDsgyWVP+SMxx0HgSCe8h7/037CwY7YY1cPeyQzwAxe3j9FeBKSwOf3p7Q7cuQ7d0oYCbPkifvDnqaLNvOhAE0c7p2ACEbTBwIjhCMYIJhAJggWICsMuQTnEdCB7m/7f6rv2XLb2781ITP6bdpSgcrgNhFhTqChnv9eGosILijKAnCIvlxQsQbwC5AeTfM4IkACdhHtHUlBTxjYSjEYMATxHGEQyQK5GFlZ3daOWsLxgyiphYAMVJIv9XsIC9xgHg4HIDFBzUxyM5QCUShxBYifDwYSXErlkCkmEkaAcEDFRERUKmCxA0ARMiINEHBIcT2JkapPgmVhShHRjZOQU5xExqPw43uNQCOqffp0iEAegDShe9Nz4DUcK6Aa9nmACLylT+ynXYlC4CbYWLGHoTJzFxj8rTfH8ZnE14pfqP4Ctke0EBoEG0gMJLcK3J2Lx9XIrFz2kjBIhSvpx9NgI6QPgRB/Qu6YNIo8kHTpYcU0IWcRw+NJ9HIoAjIAroTja/FhWeRIblUoGQHShSZV9J3A7bDSD/jil2xHQgiOTNJRoToISW9rYsi2tnMZZ7ieHwSINhSJyYyBc7N8J7hmkAS7IAhgFYRRxNGFww2SOEQm5/e2IVZ3AToYHiEMEfGWtJkIQGRJgfsIEuU1wAzKGUmEM0oHgwMYo3aWJuG4B3IidlNJlQnYFJ/JNMxvfXcUxqNw2AH8WV0vg6y1+T2Yjb8liz9N0rDd5l9S7TfSuT4n0H7TzT7DeQLYDsQe5Fad4g4f2o9zf4TlmH7MH2Hp+B3Xsx7dYRniEWa2nLyUyR7vQr4wnVEOaRtybQB55zoqZnGiLzMPeVcz5ymEUdklSJ/HxpS1CPtHafAohAScnLVMbZYOEVSfH7cmStCs9qBdh7kssGzVrUdtdwPRrn/Wa7sfNeutdKHuDSviQCrnmGnQogr/VrrMcVVSiKn6/V0ZMqIN7UA0jlf4Jb9T+RJqPT8BfgDKoGBCqetwmRe3Rk2dcdQ8EF4ph1mYjI99NZuJ1xZB3rNSNFBcYW9Y8jNUoEMDQqOzryeyCFLqi5yTPLFr2sDBUJs8K0Je4hzfm9reAi1dF4XVNfHdS4/lvUCIx/Uj7xXhvZKmX/wsHrFomM8yUwPqDf+CBEKdHXIMvvYQLCK4OoNjiqAW71oYvzH/d2NH27IrcVcxniunRh63Y2+M9062daBad/qWaMcbinBpB/bGD9/+/gK/9B";
 
-    // 樱花类
-    class Sakura {
-        constructor() {
-            this.reset(true);
-        }
-
-        reset(initial = false) {
-            this.s = CONFIG.minSize + Math.random() * (CONFIG.maxSize - CONFIG.minSize);
-            this.r = Math.random() * Math.PI * 2;
-            this.rotateSpeed = (Math.random() - 0.5) * 0.02;
-
-            if (initial) {
-                this.x = Math.random() * window.innerWidth;
-                this.y = Math.random() * window.innerHeight;
-            } else {
-                // 从顶部或右侧重新进入
-                if (Math.random() > 0.4) {
-                    this.x = Math.random() * window.innerWidth;
-                    this.y = -40;
-                } else {
-                    this.x = window.innerWidth + 40;
-                    this.y = Math.random() * window.innerHeight;
-                }
-            }
-
-            this.speedX = CONFIG.windSpeed + (Math.random() - 0.5);
-            this.speedY = CONFIG.fallSpeed + Math.random() * 0.7;
-        }
-
-        update() {
-            this.x += this.speedX;
-            this.y += this.speedY;
-            this.r += this.rotateSpeed;
-
-            // 超出边界时重置
-            if (this.x < -40 || this.x > window.innerWidth + 40 ||
-                this.y < -40 || this.y > window.innerHeight + 40) {
-                this.reset();
-            }
-        }
-
-        draw(ctx) {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.r);
-            const size = 40 * this.s;
-            ctx.drawImage(img, -size / 2, -size / 2, size, size);
-            ctx.restore();
-        }
+    function Sakura(x, y, s, r, fn) {
+        this.x = x;
+        this.y = y;
+        this.s = s;
+        this.r = r;
+        this.fn = fn;
     }
 
-    // 初始化Canvas
+    Sakura.prototype.draw = function(cxt) {
+        cxt.save();
+        cxt.translate(this.x, this.y);
+        cxt.rotate(this.r);
+        cxt.drawImage(img, 0, 0, config.maxSize * this.s, config.maxSize * this.s);
+        cxt.restore();
+    };
+
+    Sakura.prototype.update = function() {
+        this.x = this.fn.x(this.x, this.y);
+        this.y = this.fn.y(this.y, this.y);
+        this.r = this.fn.r(this.r);
+        if (this.x > window.innerWidth || this.x < -50 || this.y > window.innerHeight || this.y < -50) {
+            this.r = getRandom('fnr');
+            if (Math.random() > 0.4) {
+                this.x = getRandom('x');
+                this.y = -20;
+                this.s = getRandom('s');
+                this.r = getRandom('r');
+            } else {
+                this.x = window.innerWidth + 20;
+                this.y = getRandom('y');
+                this.s = getRandom('s');
+                this.r = getRandom('r');
+            }
+        }
+    };
+
+    function SakuraList() { this.list = []; }
+    SakuraList.prototype.push = function(sakura) { this.list.push(sakura); };
+    SakuraList.prototype.update = function() {
+        for (var i = 0, len = this.list.length; i < len; i++) this.list[i].update();
+    };
+    SakuraList.prototype.draw = function(cxt) {
+        for (var i = 0, len = this.list.length; i < len; i++) this.list[i].draw(cxt);
+    };
+
+    function getRandom(option) {
+        var ret, random;
+        switch (option) {
+            case 'x': ret = Math.random() * window.innerWidth; break;
+            case 'y': ret = Math.random() * window.innerHeight; break;
+            case 's': ret = 0.4 + Math.random() * 0.6; break;
+            case 'r': ret = Math.random() * 6; break;
+            case 'fnx':
+                random = -config.speedX + Math.random() * config.speedX * 2;
+                ret = function(x) { return x + random - 1.7; };
+                break;
+            case 'fny':
+                random = config.speedY + Math.random() * 0.7;
+                ret = function(x, y) { return y + random; };
+                break;
+            case 'fnr':
+                random = Math.random() * config.rotationSpeed;
+                ret = function(r) { return r + random; };
+                break;
+        }
+        return ret;
+    }
+
     function initCanvas() {
         canvas = document.createElement('canvas');
-        canvas.id = 'sakura-canvas';
-        canvas.style.cssText = `
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: ${CONFIG.zIndex};
-        `;
+        canvas.id = 'canvas_sakura';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        canvas.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:999999;';
         document.body.appendChild(canvas);
         ctx = canvas.getContext('2d');
-        resizeCanvas();
     }
 
-    // 调整Canvas尺寸
-    function resizeCanvas() {
-        if (canvas) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+    function initParticles() {
+        sakuraList = new SakuraList();
+        for (var i = 0; i < config.particleCount; i++) {
+            sakuraList.push(new Sakura(getRandom('x'), getRandom('y'), getRandom('s'), getRandom('r'), {
+                x: getRandom('fnx'), y: getRandom('fny'), r: getRandom('fnr')
+            }));
         }
     }
 
-    // 创建樱花
-    function createSakuras() {
-        sakuraList = [];
-        for (let i = 0; i < CONFIG.particleCount; i++) {
-            sakuraList.push(new Sakura());
-        }
-    }
-
-    // 动画循环
     function animate() {
-        if (!isVisible) {
-            animationId = null;
-            return;
-        }
-
+        if (!isRunning) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        for (const sakura of sakuraList) {
-            sakura.update();
-            sakura.draw(ctx);
-        }
-
+        sakuraList.update();
+        sakuraList.draw(ctx);
         animationId = requestAnimationFrame(animate);
     }
 
-    // 开始动画
     function start() {
-        if (animationId) return;
-        isVisible = true;
+        if (isRunning) return;
+        if (!canvas) initCanvas();
+        if (!sakuraList) initParticles();
+        isRunning = true;
+        canvas.style.display = 'block';
         animate();
     }
 
-    // 停止动画
     function stop() {
-        isVisible = false;
-        if (animationId) {
-            cancelAnimationFrame(animationId);
-            animationId = null;
-        }
+        isRunning = false;
+        if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+        if (canvas) canvas.style.display = 'none';
     }
 
-    // 切换显示
-    function toggle() {
-        if (isVisible) {
-            stop();
-            if (canvas) canvas.style.display = 'none';
-        } else {
-            if (canvas) canvas.style.display = 'block';
-            start();
-        }
-    }
+    var resizeTimer = null;
+    window.addEventListener('resize', function() {
+        if (resizeTimer) return;
+        resizeTimer = setTimeout(function() {
+            if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            resizeTimer = null;
+        }, 200);
+    });
 
-    // 销毁
-    function destroy() {
-        stop();
-        if (canvas && canvas.parentNode) {
-            canvas.parentNode.removeChild(canvas);
-        }
-        canvas = null;
-        ctx = null;
-        sakuraList = [];
-    }
+    document.addEventListener('visibilitychange', function() {
+        document.hidden ? stop() : start();
+    });
 
-    // 可见性检测（页面不可见时暂停，节省资源）
-    function handleVisibilityChange() {
-        if (document.hidden) {
-            stop();
-        } else if (canvas && canvas.style.display !== 'none') {
-            start();
-        }
-    }
+    window.SakuraEffect = { start: start, stop: stop, toggle: function() { isRunning ? stop() : start(); } };
 
-    // 初始化
-    function init() {
-        img.onload = function () {
-            initCanvas();
-            createSakuras();
-            start();
-
-            // 监听窗口大小变化
-            window.addEventListener('resize', resizeCanvas, { passive: true });
-
-            // 监听页面可见性变化
-            document.addEventListener('visibilitychange', handleVisibilityChange);
-
-            console.log('[Nezha UI] ✓ 樱花特效加载完成');
-        };
-        img.src = SAKURA_IMG;
-    }
-
-    // 暴露API（可选）
-    window.SakuraEffect = {
-        start: start,
-        stop: stop,
-        toggle: toggle,
-        destroy: destroy
-    };
-
-    // 页面加载完成后初始化
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function() { img.complete ? start() : img.onload = start; });
     } else {
-        init();
+        img.complete ? start() : img.onload = start;
     }
-
-})(window, document);
+})();
