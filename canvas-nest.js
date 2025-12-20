@@ -1,6 +1,7 @@
 /**
  * Canvas Nest - 蜘蛛网粒子动画效果
  * 性能优化版 - 适用于背景装饰
+ * 包含主题自动适配功能
  * 
  * 配置说明:
  * - count: 粒子数量 (建议: 50-150)
@@ -17,13 +18,19 @@
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobile) return;
 
+    // 主题检测函数
+    function isDarkTheme() {
+        return document.documentElement.classList.contains('dark') ||
+            document.documentElement.getAttribute('data-theme') === 'dark';
+    }
+
     // 默认配置
     const CONFIG = {
-        count: 100,              // 粒子数量
-        color: '0,0,0',          // 线条颜色 (RGB) - 黑色
-        opacity: 0.5,            // 画布透明度
-        zIndex: -1,              // z-index层级
-        maxDistance: 12000,      // 最大连线距离²
+        count: 120,              // 粒子数量(增加密度)
+        color: isDarkTheme() ? '255,255,255' : '0,0,0',  // 主题自适应颜色
+        opacity: 0.7,            // 画布透明度(提高可见度)
+        zIndex: 1,               // z-index层级
+        maxDistance: 12000,      // 最大连线距离²(增加连接)
         mouseDistance: 20000,    // 鼠标影响距离²
         speed: 0.5               // 粒子速度系数
     };
@@ -157,6 +164,21 @@
         init();
     });
 
+    // 监听主题切换
+    const themeObserver = new MutationObserver(() => {
+        const newColor = isDarkTheme() ? '255,255,255' : '0,0,0';
+        if (CONFIG.color !== newColor) {
+            CONFIG.color = newColor;
+            console.log('[Canvas Nest] 主题已切换,颜色更新为:', newColor);
+        }
+    });
+
+    // 监听 html 元素的 class 和 data-theme 属性变化
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'data-theme']
+    });
+
     // 启动
     resize();
     init();
@@ -168,6 +190,9 @@
         restart: () => {
             resize();
             init();
+        },
+        updateTheme: () => {
+            CONFIG.color = isDarkTheme() ? '255,255,255' : '0,0,0';
         }
     };
 })();
