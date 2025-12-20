@@ -13,7 +13,7 @@
     bar.id = 'ip-glass-bar';
     bar.innerHTML = `
         <div class="ip-content">
-            <span class="ip-dot">●</span>
+            <span class="ip-dot">◉</span>
             <span class="ip-label">Your IP:</span>
             <span id="ip-address">Loading...</span>
             <span class="divider">|</span>
@@ -48,7 +48,7 @@
             cursor: pointer;
             opacity: 0;
             transition: all 500ms cubic-bezier(.4,0,.2,1);
-            font: 500 13px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font: 600 13px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             color: rgba(0,0,0,.7);
             white-space: nowrap;
         }
@@ -61,13 +61,13 @@
 
         #ip-glass-bar .ip-content { display: flex; align-items: center; gap: 10px; }
         #ip-glass-bar .ip-icon-collapsed { display: none; font-size: 20px; line-height: 1; }
-        #ip-glass-bar .ip-dot { color: #e05555; font-size: 8px; animation: ip-pulse 2s infinite; }
+        #ip-glass-bar .ip-dot { color: #e05555; font-size: 12px; animation: ip-pulse 2s ease-in-out infinite; }
         #ip-glass-bar .ip-label { color: #e05555; }
         #ip-glass-bar .divider { color: rgba(0,0,0,.2); margin: 0 4px; }
 
         @keyframes ip-pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: .5; transform: scale(.9); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
         }
 
         #ip-glass-bar.collapsed {
