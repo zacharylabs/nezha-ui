@@ -1,19 +1,25 @@
 /**
  * IP Display Widget - Optimized Version
- * 液态玻璃 IP 信息显示条 - 精简优化版
+ * 液态玻璃 IP 信息显示条 - 优化版
  * 
- * 特性：10秒自动收起 | 悬停暂停 | 液态玻璃样式 | 悬浮动画
+ * 特性：
+ * - 10秒后自动收起为图标 📍
+ * - 点击图标展开
+ * - 完全适配 NezhaUI 液态玻璃样式
+ * - 双 API 备份
+ * - 响应式设计
  */
 
 (function () {
     'use strict';
 
-    // 创建容器
-    const bar = document.createElement('div');
-    bar.id = 'ip-glass-bar';
-    bar.innerHTML = `
+    // ========== 创建 UI 元素 ==========
+
+    const container = document.createElement('div');
+    container.id = 'ip-glass-bar';
+    container.innerHTML = `
         <div class="ip-content">
-            <span class="ip-dot">◉</span>
+            <span class="ip-dot"></span>
             <span class="ip-label">Your IP:</span>
             <span id="ip-address">Loading...</span>
             <span class="divider">|</span>
@@ -24,52 +30,94 @@
         <div class="ip-icon-collapsed">📍</div>
     `;
 
-    // CSS 样式
+    // ========== CSS 样式 ==========
+
     const style = document.createElement('style');
     style.textContent = `
         #ip-glass-bar {
-            --glass-bg-light: linear-gradient(135deg, rgba(255,255,255,.25), rgba(255,255,255,.1) 50%, rgba(255,255,255,.15));
-            --glass-bg-dark: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.05) 50%, rgba(255,255,255,.08));
-            --shadow-base: 0 8px 32px rgba(0,0,0,.1), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -1px 1px rgba(0,0,0,.05);
-            --shadow-hover: 0 12px 48px rgba(0,0,0,.15), inset 0 1px 1px rgba(255,255,255,.8), inset 0 -1px 1px rgba(0,0,0,.05), 0 0 20px rgba(255,255,255,.3);
-            
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 9999;
-            background: var(--glass-bg-light);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255,255,255,.4);
+            background: transparent linear-gradient(135deg, 
+                rgba(255,255,255,.4) 0%, 
+                rgba(255,255,255,.1) 50%, 
+                rgba(255,255,255,.2) 100%);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,.5);
             border-radius: 50px;
-            box-shadow: var(--shadow-base);
+            box-shadow: 0 4px 10px rgba(0,0,0,.05), inset 0 1px 1px rgba(255,255,255,.8);
             padding: 10px 24px;
             cursor: pointer;
             opacity: 0;
-            transition: all 500ms cubic-bezier(.4,0,.2,1);
-            font: 600 13px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: rgba(0,0,0,.7);
+            transition: all .3s ease-out;
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(0,0,0,0.7);
             white-space: nowrap;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-
+        
         #ip-glass-bar:hover {
-            transform: translateX(-50%) translateY(-3px) scale(1.02);
-            box-shadow: var(--shadow-hover);
-            background: linear-gradient(135deg, rgba(255,255,255,.35), rgba(255,255,255,.15) 50%, rgba(255,255,255,.25));
+            transform: translateX(-50%) translateY(-2px) scale(1.05);
+            background: transparent linear-gradient(135deg,
+                rgba(255,255,255,.6) 0%,
+                rgba(255,255,255,.2) 50%,
+                rgba(255,255,255,.4) 100%);
+            border-color: rgba(255,255,255,.8);
+            box-shadow: 0 8px 20px rgba(0,0,0,.1), inset 0 1px 2px rgba(255,255,255,.9);
         }
-
-        #ip-glass-bar .ip-content { display: flex; align-items: center; gap: 10px; }
-        #ip-glass-bar .ip-icon-collapsed { display: none; font-size: 20px; line-height: 1; }
-        #ip-glass-bar .ip-dot { color: #e05555; font-size: 12px; animation: ip-pulse 2s ease-in-out infinite; }
-        #ip-glass-bar .ip-label { color: #e05555; }
-        #ip-glass-bar .divider { color: rgba(0,0,0,.2); margin: 0 4px; }
-
+        
+        #ip-glass-bar.collapsed:hover {
+            transform: translateY(-2px) scale(1.05);
+            background: transparent linear-gradient(135deg,
+                rgba(255,255,255,.6) 0%,
+                rgba(255,255,255,.2) 50%,
+                rgba(255,255,255,.4) 100%);
+            border-color: rgba(255,255,255,.8);
+            box-shadow: 0 8px 20px rgba(0,0,0,.1), inset 0 1px 2px rgba(255,255,255,.9);
+        }
+        
+        #ip-glass-bar .ip-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #ip-glass-bar .ip-icon-collapsed {
+            display: none;
+            font-size: 20px;
+            line-height: 1;
+        }
+        
+        #ip-glass-bar .ip-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+            animation: ip-pulse 2s infinite;
+        }
+        
         @keyframes ip-pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
         }
-
+        
+        #ip-glass-bar .ip-label {
+            opacity: 0.8;
+            margin-right: 4px;
+        }
+        
+        #ip-glass-bar .divider {
+            color: rgba(0,0,0,0.3);
+            opacity: 0.5;
+            margin: 0 8px;
+            font-weight: 300;
+        }
+        
         #ip-glass-bar.collapsed {
             left: auto;
             right: 20px;
@@ -77,93 +125,222 @@
             padding: 12px;
             border-radius: 50%;
         }
-        #ip-glass-bar.collapsed .ip-content { display: none; }
-        #ip-glass-bar.collapsed .ip-icon-collapsed { display: flex; align-items: center; justify-content: center; }
-        #ip-glass-bar.collapsed:hover { transform: translateY(-3px) scale(1.05); }
-
-        /* 深色模式 */
+        
+        #ip-glass-bar.collapsed .ip-content {
+            display: none;
+        }
+        
+        #ip-glass-bar.collapsed .ip-icon-collapsed {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 暗色模式 */
         html.dark #ip-glass-bar {
-            background: var(--glass-bg-dark);
-            border-color: rgba(255,255,255,.15);
-            color: rgba(255,255,255,.85);
-            box-shadow: 0 8px 32px rgba(0,0,0,.3), inset 0 1px 1px rgba(255,255,255,.2), inset 0 -1px 1px rgba(0,0,0,.1);
+            background: transparent linear-gradient(135deg, rgba(0,0,0,.25) 0%, rgba(0,0,0,.05) 100%);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,.15);
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,.9);
         }
+        
         html.dark #ip-glass-bar:hover {
-            box-shadow: 0 12px 48px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.3), inset 0 -1px 1px rgba(0,0,0,.1), 0 0 20px rgba(255,255,255,.1);
-            background: linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.08) 50%, rgba(255,255,255,.12));
+            background: transparent linear-gradient(135deg, rgba(255,255,255,.15) 0%, rgba(255,255,255,.05) 100%);
+            border-color: rgba(255,255,255,.3);
         }
-        html.dark #ip-glass-bar .ip-dot,
-        html.dark #ip-glass-bar .ip-label { color: #ff7b7b; }
-        html.dark #ip-glass-bar .divider { color: rgba(255,255,255,.2); }
-
+        
+        html.dark #ip-glass-bar.collapsed:hover {
+            transform: translateY(-2px) scale(1.05);
+            background: transparent linear-gradient(135deg, rgba(255,255,255,.15) 0%, rgba(255,255,255,.05) 100%);
+            border-color: rgba(255,255,255,.3);
+        }
+        
+        html.dark #ip-glass-bar .divider {
+            color: rgba(255,255,255,0.4);
+            opacity: 0.5;
+        }
+        
+        /* 平板适配 */
+        @media (max-width: 900px) {
+            #ip-glass-bar {
+                font-size: 12px;
+                padding: 8px 20px;
+            }
+            #ip-glass-bar .ip-content {
+                gap: 8px;
+            }
+            #ip-glass-bar .divider {
+                margin: 0 6px;
+            }
+        }
+        
+        /* 手机适配 */
         @media (max-width: 600px) {
-            #ip-glass-bar { font-size: 12px; padding: 8px 18px; max-width: 90%; }
-            #ip-glass-bar .ip-label { display: none; }
+            #ip-glass-bar {
+                font-size: 10px;
+                padding: 6px 12px;
+                max-width: 92%;
+                bottom: 15px;
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+            #ip-glass-bar .ip-content {
+                gap: 4px;
+                flex-wrap: nowrap;
+            }
+            #ip-glass-bar .ip-label {
+                display: none;
+            }
+            #ip-glass-bar .divider {
+                margin: 0 3px;
+            }
+            #ip-glass-bar .ip-dot {
+                width: 6px;
+                height: 6px;
+                flex-shrink: 0;
+            }
+            #ip-glass-bar:hover {
+                transform: translateX(-50%) translateY(-2px) scale(1.02);
+            }
+            #ip-glass-bar.collapsed {
+                padding: 10px;
+                right: 15px;
+                bottom: 15px;
+            }
+            #ip-glass-bar .ip-icon-collapsed {
+                font-size: 16px;
+            }
+        }
+        
+        /* 超小屏幕 */
+        @media (max-width: 400px) {
+            #ip-glass-bar {
+                font-size: 10px;
+                padding: 5px 12px;
+            }
+            /* 保留所有信息 */
         }
     `;
 
     document.head.appendChild(style);
-    document.body.appendChild(bar);
+    document.body.appendChild(container);
 
-    // 状态管理
+    // ========== 状态管理 ==========
+
     let isExpanded = true;
-    let timer = null;
+    let autoCollapseTimer = null;
 
-    // 更新 IP 信息
-    const updateIP = (data) => {
-        document.getElementById('ip-address').textContent = data.ip || '--';
-        document.getElementById('ip-location').textContent =
-            `${data.country_name || data.country || '--'} · ${data.city || '--'}`;
-        const asn = data.asn ? (data.asn.startsWith('AS') ? data.asn : 'AS' + data.asn) : '';
-        document.getElementById('ip-asn').textContent = (asn + (data.org ? ' ' + data.org : '')) || '--';
-    };
+    // ========== 获取 IP 信息 ==========
 
-    // 获取 IP 信息
     async function fetchIPInfo() {
-        try {
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
-            updateIP(data);
-        } catch (err) {
-            console.error('[IP Bar] API 请求失败:', err);
-            document.getElementById('ip-address').textContent = 'Failed';
-            document.getElementById('ip-location').textContent = 'Please refresh';
-            document.getElementById('ip-asn').textContent = '--';
+        const apis = [
+            {
+                url: 'https://ipapi.co/json/',
+                parse: function (data) {
+                    return {
+                        ip: data.ip,
+                        location: (data.country_name || data.country || '--') + ' · ' + (data.city || '--'),
+                        asn: (data.asn ? (data.asn.startsWith('AS') ? data.asn : 'AS' + data.asn) : '') + (data.org ? ' ' + data.org : '')
+                    };
+                }
+            },
+            {
+                url: 'https://api.ip.sb/geoip',
+                parse: function (data) {
+                    return {
+                        ip: data.ip,
+                        location: (data.country || '--') + ' · ' + (data.city || '--'),
+                        asn: data.isp ? (data.organization || data.isp) : '--'
+                    };
+                }
+            },
+            {
+                url: 'https://ipinfo.io/json',
+                parse: function (data) {
+                    return {
+                        ip: data.ip,
+                        location: (data.country || '--') + ' · ' + (data.city || data.region || '--'),
+                        asn: data.org || '--'
+                    };
+                }
+            },
+            {
+                url: 'https://api.ipify.org?format=json',
+                parse: function (data) {
+                    return {
+                        ip: data.ip,
+                        location: '--',
+                        asn: '--'
+                    };
+                }
+            }
+        ];
+
+        for (let i = 0; i < apis.length; i++) {
+            try {
+                const res = await fetch(apis[i].url);
+                const data = await res.json();
+                const info = apis[i].parse(data);
+
+                document.getElementById('ip-address').textContent = info.ip || '--';
+                document.getElementById('ip-location').textContent = info.location || '--';
+                document.getElementById('ip-asn').textContent = info.asn || '--';
+
+                console.log('[IP Bar] 使用 API:', apis[i].url);
+                return;
+            } catch (e) {
+                console.warn('[IP Bar] API 失败:', apis[i].url, e.message);
+            }
         }
+
+        // 所有 API 都失败
+        document.getElementById('ip-address').textContent = '获取失败';
+        document.getElementById('ip-location').textContent = '--';
+        document.getElementById('ip-asn').textContent = '--';
+        console.error('[IP Bar] 所有 API 请求失败');
     }
 
-    // 展开/收起
-    const expand = () => {
+    // ========== 展开/收起控制 ==========
+
+    function expand() {
         isExpanded = true;
-        bar.classList.remove('collapsed');
-        clearTimeout(timer);
-        timer = setTimeout(collapse, 10000);
-    };
+        container.classList.remove('collapsed');
+        // 清除内联样式，让 CSS 控制
+        container.style.removeProperty('left');
+        container.style.removeProperty('right');
+        container.style.removeProperty('transform');
 
-    const collapse = () => {
+        clearTimeout(autoCollapseTimer);
+        autoCollapseTimer = setTimeout(collapse, 10000);
+    }
+
+    function collapse() {
         isExpanded = false;
-        bar.classList.add('collapsed');
-        clearTimeout(timer);
-    };
+        container.classList.add('collapsed');
+        // 清除内联样式，让 CSS .collapsed 类控制
+        container.style.removeProperty('left');
+        container.style.removeProperty('right');
+        container.style.removeProperty('transform');
+        clearTimeout(autoCollapseTimer);
+    }
 
-    // 事件监听
-    bar.addEventListener('click', (e) => {
+    container.addEventListener('click', function (e) {
         e.stopPropagation();
-        isExpanded ? collapse() : expand();
-    });
-
-    bar.addEventListener('mouseenter', () => isExpanded && clearTimeout(timer));
-    bar.addEventListener('mouseleave', () => {
         if (isExpanded) {
-            clearTimeout(timer);
-            timer = setTimeout(collapse, 3000);
+            collapse();
+        } else {
+            expand();
         }
     });
 
-    // 初始化
+    // ========== 初始化 ==========
+
     fetchIPInfo();
-    setTimeout(() => {
-        bar.style.opacity = '1';
+
+    setTimeout(function () {
+        container.style.opacity = '1';
         expand();
     }, 300);
 
