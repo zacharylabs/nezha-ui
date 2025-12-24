@@ -1,4 +1,4 @@
-const SCRIPT_VERSION = 'v20250617';
+const SCRIPT_VERSION = 'v20251225-optimized';
 // == 样式注入模块 ==
 // 注入自定义CSS隐藏特定元素
 function injectCustomCSS() {
@@ -137,6 +137,31 @@ const utils = (() => {
 // == 流量统计渲染模块 ==
 const trafficRenderer = (() => {
   const toggleElements = [];  // 存储需周期切换显示的元素及其内容
+  let toggleTimer = null;  // 定时器引用，用于清除
+  const sectionCache = new Map();  // 缓存服务器名→section映射
+  const elementCache = new Map();  // 缓存serverId→已创建流量元素
+
+  /**
+   * 构建section缓存
+   */
+  function buildSectionCache() {
+    sectionCache.clear();
+    document.querySelectorAll('section.grid.items-center.gap-2').forEach(section => {
+      const serverName = section.querySelector('p')?.textContent.trim();
+      if (serverName) {
+        sectionCache.set(serverName, section);
+      }
+    });
+  }
+
+  /**
+   * 清空缓存
+   */
+  function clearCache() {
+    sectionCache.clear();
+    elementCache.clear();
+    toggleElements.length = 0;  // 清空toggle元素数组
+  }
 
   /**
    * 渲染流量统计条目
@@ -171,13 +196,14 @@ const trafficRenderer = (() => {
       }
     }
 
+    // 构建section缓存（首次或缓存为空时）
+    if (sectionCache.size === 0) {
+      buildSectionCache();
+    }
+
     serverMap.forEach((serverData, serverName) => {
-      // 查找对应显示区域
-      const targetElement = Array.from(document.querySelectorAll('section.grid.items-center.gap-2'))
-        .find(section => {
-          const firstText = section.querySelector('p')?.textContent.trim();
-          return firstText === serverName.trim();
-        });
+      // 使用缓存查找对应显示区域
+      const targetElement = sectionCache.get(serverName.trim());
       if (!targetElement) return;
 
       // 格式化数据
@@ -195,14 +221,23 @@ const trafficRenderer = (() => {
       // 日志输出函数
       const log = (...args) => { if (config.enableLog) console.log('[renderTrafficStats]', ...args); };
 
-      // 查找是否已有对应流量条目元素
-      const existing = Array.from(containerDiv.querySelectorAll('.new-inserted-element'))
-        .find(el => el.classList.contains(uniqueClassName));
+      // 使用缓存查找已创建的流量条目元素
+      let existing = elementCache.get(serverData.id);
+
+      // 如果缓存中没有，尝试从DOM查找（兼容性）
+      if (!existing) {
+        existing = Array.from(containerDiv.querySelectorAll('.new-inserted-element'))
+          .find(el => el.classList.contains(uniqueClassName));
+        if (existing) {
+          elementCache.set(serverData.id, existing);
+        }
+      }
 
       if (!config.showTrafficStats) {
         // 不显示时移除对应元素
         if (existing) {
           existing.remove();
+          elementCache.delete(serverData.id);
           log(`移除流量条目: ${serverName}`);
         }
         return;
@@ -269,6 +304,7 @@ const trafficRenderer = (() => {
         `;
 
         oldSection.after(newElement);
+        elementCache.set(serverData.id, newElement);  // 添加到缓存
         log(`插入新流量条目: ${serverName}`);
 
         // 启用切换时，将元素及其内容保存以便周期切换
@@ -292,9 +328,15 @@ const trafficRenderer = (() => {
    */
   function startToggleCycle(toggleInterval, duration) {
     if (toggleInterval <= 0) return;
-    let toggleIndex = 0;
 
-    setInterval(() => {
+    // 清除旧定时器，防止内存泄漏
+    if (toggleTimer) {
+      clearInterval(toggleTimer);
+      toggleTimer = null;
+    }
+
+    let toggleIndex = 0;
+    toggleTimer = setInterval(() => {
       toggleIndex++;
       toggleElements.forEach(({ el, contents }) => {
         if (!document.body.contains(el)) return;
@@ -304,9 +346,21 @@ const trafficRenderer = (() => {
     }, toggleInterval);
   }
 
+  /**
+   * 停止周期切换
+   */
+  function stopToggleCycle() {
+    if (toggleTimer) {
+      clearInterval(toggleTimer);
+      toggleTimer = null;
+    }
+  }
+
   return {
     renderTrafficStats,
-    startToggleCycle
+    startToggleCycle,
+    stopToggleCycle,
+    clearCache
   };
 })();
 
@@ -432,12 +486,12 @@ const domObserver = (() => {
     insertAfter: true,
     interval: 60000,
     toggleInterval: 5000,
-    duration: 500,
+    duration: 800,  // 优化：增加到800ms，减少闪烁
     apiUrl: '/api/v1/service',
     enableLog: false
   };
   // 合并用户自定义配置
-  const config = Object.assign({}, defaultConfig, window.TrafficScriptConfig || {});
+  let config = Object.assign({}, defaultConfig, window.TrafficScriptConfig || {});
   if (config.enableLog) {
     console.log(`[TrafficScript] 版本: ${SCRIPT_VERSION}`);
     console.log('[TrafficScript] 最终配置如下:', config);
@@ -456,6 +510,7 @@ const domObserver = (() => {
    */
   function onDomChange() {
     if (config.enableLog) console.log('[main] DOM变化，刷新流量数据');
+    trafficRenderer.clearCache();  // 清空缓存，重新扫描DOM
     updateTrafficStats();
     if (!trafficTimer) startPeriodicRefresh();
   }
@@ -488,7 +543,13 @@ const domObserver = (() => {
     // 判断配置是否变化（简单粗暴比较JSON字符串）
     if (JSON.stringify(newConfig) !== JSON.stringify(config)) {
       if (config.enableLog) console.log('[main] 100ms后检测到新配置，更新配置并重启任务');
-      config = newConfig;
+
+      // 停止旧的toggle定时器
+      trafficRenderer.stopToggleCycle();
+
+      // 更新配置对象
+      Object.assign(config, newConfig);
+
       // 重新启动周期刷新任务
       startPeriodicRefresh();
       // 重新启动内容切换轮播（传入新配置）
@@ -503,5 +564,6 @@ const domObserver = (() => {
   window.addEventListener('beforeunload', () => {
     domObserver.disconnectAll(sectionDetector);
     if (trafficTimer) clearInterval(trafficTimer);
+    trafficRenderer.stopToggleCycle();  // 清除toggle定时器
   });
 })();
