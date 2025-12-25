@@ -1,3 +1,4 @@
+
 /*!
  * 鼠标点击爱心特效 - 优化版
  * 作者: Zachary
@@ -36,7 +37,7 @@
                 height: inherit;
                 background: inherit;
                 border-radius: 50%;
-                position: fixed;
+                position: absolute;
             }
             .click-heart:after { top: -5px; }
             .click-heart:before { left: -5px; }
@@ -75,6 +76,7 @@
             el: heart,
             x: x - 5,
             y: y - 5,
+            initialY: y - 5,  // 记录初始Y位置
             scale: 1,
             alpha: 1
         });
@@ -102,9 +104,10 @@
                 h.scale += 0.004;
                 h.alpha -= 0.013;
 
-                h.el.style.transform = `scale(${h.scale}) rotate(45deg)`;
+                // 使用translate3d代替top，启用GPU加速
+                const dy = h.y - h.initialY;
+                h.el.style.transform = `translate3d(0, ${dy}px, 0) scale(${h.scale}) rotate(45deg)`;
                 h.el.style.opacity = h.alpha;
-                h.el.style.top = h.y + 'px';
 
                 hasActive = true;
             }
