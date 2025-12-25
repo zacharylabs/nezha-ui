@@ -79,33 +79,20 @@ const utils = (() => {
   }
 
   /**
-   * 根据百分比返回渐变HSL颜色（绿→橙→红）
+   * 根据百分比返回HSL颜色（三色分段：绿/橙/红）
    * @param {number} percentage - 0~100的百分比
    * @returns {string} hsl颜色字符串
    */
   function getHslGradientColor(percentage) {
-    const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
-    const lerp = (start, end, t) => start + (end - start) * t;
-    const p = clamp(Number(percentage), 0, 100);
-    let h, s, l;
+    const p = Math.min(Math.max(Number(percentage), 0), 100);
 
-    if (p <= 35) {
-      const t = p / 35;
-      h = lerp(142, 32, t);  // 绿色到橙色
-      s = lerp(69, 85, t);
-      l = lerp(45, 55, t);
-    } else if (p <= 85) {
-      const t = (p - 35) / 50;
-      h = lerp(32, 0, t);    // 橙色到红色
-      s = lerp(85, 75, t);
-      l = lerp(55, 50, t);
+    if (p <= 50) {
+      return 'hsl(142, 69%, 45%)';  // 🟢 绿色 - 安全区 (0-50%)
+    } else if (p <= 80) {
+      return 'hsl(32, 85%, 55%)';   // 🟠 橙色 - 警告区 (51-80%)
     } else {
-      const t = (p - 85) / 15;
-      h = 0;                 // 红色加深
-      s = 75;
-      l = lerp(50, 45, t);
+      return 'hsl(0, 75%, 50%)';    // 🔴 红色 - 危险区 (81-100%)
     }
-    return `hsl(${h.toFixed(0)}, ${s.toFixed(0)}%, ${l.toFixed(0)}%)`;
   }
 
   /**
