@@ -1,6 +1,6 @@
 /**
- * 哪吒面板底部信息修改 - 优化版
- * v2.0 - 修复配置未使用bug、添加重试机制、改进错误处理
+ * 哪吒面板底部信息修改 - 增强版
+ * v2.1 - 添加年份自动更新、右侧显示开关
  */
 
 (function () {
@@ -8,11 +8,12 @@
 
     // ==================== 配置 ====================
     const CONFIG = {
-        leftText: '© 2025 ZacharyLabs',                   // 左侧文字
-        rightText: 'Powered by NeZha',                     // 右侧文字
-        rightLink: 'https://github.com/nezhahq/nezha',    // 右侧链接
-        maxRetries: 3,                                     // 最大重试次数
-        retryDelay: 200                                    // 重试延迟(ms)
+        leftText: 'ZacharyLabs',                       // 左侧文字（年份会自动添加）
+        rightText: 'Powered by NeZha',                 // 右侧文字
+        rightLink: 'https://github.com/nezhahq/nezha', // 右侧链接
+        showRightFooter: false,                        // 是否显示右侧（true显示，false隐藏）
+        maxRetries: 3,                                 // 最大重试次数
+        retryDelay: 200                                // 重试延迟(ms)
     };
 
     // ==================== 修改底部信息 ====================
@@ -22,27 +23,34 @@
 
         let updated = false;
 
-        // 修改左侧
+        // 修改左侧 - 自动添加当前年份
         if (leftFooter) {
-            leftFooter.textContent = CONFIG.leftText;
+            const currentYear = new Date().getFullYear();
+            leftFooter.textContent = `© ${currentYear} ${CONFIG.leftText}`;
             updated = true;
         }
 
-        // 修改右侧 - 使用配置的链接和文字
+        // 修改右侧 - 根据配置决定显示或隐藏
         if (rightFooter) {
-            const link = document.createElement('a');
-            link.href = CONFIG.rightLink;
-            link.textContent = CONFIG.rightText;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            link.style.cssText = 'color:inherit;text-decoration:none';
+            if (CONFIG.showRightFooter) {
+                // 显示右侧链接
+                const link = document.createElement('a');
+                link.href = CONFIG.rightLink;
+                link.textContent = CONFIG.rightText;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.style.cssText = 'color:inherit;text-decoration:none';
 
-            // 悬停效果 - 使用内联事件避免重复监听
-            link.onmouseenter = () => link.style.opacity = '0.7';
-            link.onmouseleave = () => link.style.opacity = '1';
+                // 悬停效果
+                link.onmouseenter = () => link.style.opacity = '0.7';
+                link.onmouseleave = () => link.style.opacity = '1';
 
-            rightFooter.innerHTML = '';
-            rightFooter.appendChild(link);
+                rightFooter.innerHTML = '';
+                rightFooter.appendChild(link);
+            } else {
+                // 隐藏右侧
+                rightFooter.innerHTML = '';
+            }
             updated = true;
         }
 
@@ -60,7 +68,6 @@
     let retryCount = 0;
 
     function tryUpdate() {
-        // 检查关键元素是否存在
         const footerExists = document.querySelector('.server-footer-name');
 
         if (footerExists) {
