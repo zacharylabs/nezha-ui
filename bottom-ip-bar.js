@@ -98,6 +98,7 @@
         #ip-glass-bar .ip-icon-collapsed svg {
             width: 32px;
             height: 32px;
+            stroke: #0ea5e9;
         }
         
         #ip-glass-bar .ip-dot {
@@ -129,7 +130,7 @@
         #ip-glass-bar.collapsed {
             left: auto;
             right: 20px;
-            bottom: 180px;
+            bottom: 20px;
             transform: none;
             width: 46px;
             height: 46px;
@@ -174,6 +175,10 @@
         html.dark #ip-glass-bar .divider {
             color: rgba(255,255,255,0.4);
             opacity: 0.5;
+        }
+        
+        html.dark #ip-glass-bar .ip-icon-collapsed svg {
+            stroke: #38bdf8;
         }
         
         /* 平板适配 */
@@ -222,7 +227,7 @@
                 width: 40px;
                 height: 40px;
                 right: 15px;
-                bottom: 160px;
+                bottom: 15px;
             }
             #ip-glass-bar .ip-icon-collapsed svg {
                 width: 22px;
