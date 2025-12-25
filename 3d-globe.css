@@ -1,0 +1,483 @@
+/**
+ * Nezha 3D Globe V14.0 - Ultimate Edition
+ * 中文显示 + 访客连线 + 4K优化 + 全响应式
+ */
+
+/* 遮罩层 */
+.earth-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 99998;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.earth-modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+#earth-drawer-container {
+    position: relative;
+    width: 80vw;
+    height: 80vh;
+    max-width: 1600px;
+    background: linear-gradient(135deg, rgba(0, 5, 15, 0.98), rgba(0, 10, 25, 0.98));
+    border: 2px solid rgba(0, 255, 255, 0.4);
+    border-radius: 16px;
+    box-shadow: 0 20px 100px rgba(0, 10, 30, 0.95);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#earth-render-area {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    cursor: grab;
+}
+
+#earth-render-area:active {
+    cursor: grabbing;
+}
+
+.earth-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, transparent 100%);
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    box-sizing: border-box;
+}
+
+.earth-title {
+    color: #00ffff;
+    font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    letter-spacing: 4px;
+    font-weight: 700;
+    font-size: 20px;
+    text-shadow: 0 0 15px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.4);
+    pointer-events: auto;
+    animation: titleGlow 3s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 15px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.4);
+    }
+
+    50% {
+        text-shadow: 0 0 20px rgba(0, 255, 255, 1), 0 0 40px rgba(0, 255, 255, 0.6);
+    }
+}
+
+.earth-stats {
+    position: absolute;
+    top: 80px;
+    left: 30px;
+    color: rgba(255, 255, 255, 0.95);
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    z-index: 10;
+    background: rgba(0, 20, 40, 0.85);
+    padding: 15px 20px;
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.earth-stats div {
+    margin: 4px 0;
+}
+
+.earth-stats span {
+    color: #00ffff;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+}
+
+#earth-close-btn {
+    pointer-events: auto;
+    color: #fff;
+    background: linear-gradient(135deg, rgba(0, 100, 150, 0.3), rgba(0, 50, 100, 0.3));
+    border: 1px solid rgba(0, 255, 255, 0.6);
+    padding: 8px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    font-family: 'Consolas', monospace;
+    font-weight: 600;
+    letter-spacing: 1px;
+    border-radius: 6px;
+    backdrop-filter: blur(5px);
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+#earth-close-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(0, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+#earth-close-btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+#earth-close-btn:hover {
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.4), rgba(0, 200, 255, 0.4));
+    border-color: #00ffff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.6), inset 0 0 20px rgba(0, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+#earth-close-btn span {
+    position: relative;
+    z-index: 1;
+}
+
+#earth-toggle-btn {
+    position: fixed;
+    right: 20px;
+    top: 125px;
+    width: 46px;
+    height: 46px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.2) 100%) !important;
+    backdrop-filter: blur(10px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 99998;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+}
+
+#earth-toggle-btn::before {
+    display: none;
+}
+
+#earth-toggle-btn:hover {
+    transform: translateY(-2px) scale(1.05) !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.4) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.9) !important;
+}
+
+#earth-toggle-btn:active {
+    transform: translateY(0px) scale(1.02) !important;
+}
+
+#earth-toggle-btn.hidden {
+    transform: translateX(150px) scale(0);
+    opacity: 0;
+}
+
+#earth-toggle-btn svg {
+    width: 32px;
+    height: 32px;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+#earth-toggle-btn svg path,
+#earth-toggle-btn svg circle:not([fill]) {
+    stroke: #0ea5e9;
+    fill: none;
+    stroke-width: 1.5;
+}
+
+#earth-toggle-btn svg circle[fill="#00ffff"] {
+    fill: #0ea5e9;
+    stroke: none;
+}
+
+/* 深色模式适配 */
+html.dark #earth-toggle-btn {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.05) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark #earth-toggle-btn:hover {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.1) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html.dark #earth-toggle-btn svg path,
+html.dark #earth-toggle-btn svg circle:not([fill]) {
+    stroke: #38bdf8;
+}
+
+html.dark #earth-toggle-btn svg circle[fill="#00ffff"] {
+    fill: #38bdf8;
+}
+
+.earth-label-card {
+    background: linear-gradient(135deg, rgba(0, 20, 40, 0.98), rgba(0, 10, 30, 0.98));
+    border: 1px solid #00ffff;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.6), 0 4px 10px rgba(0, 0, 0, 0.5);
+    transform: translateY(-25px);
+    white-space: nowrap;
+    font-family: 'Microsoft YaHei', sans-serif;
+    backdrop-filter: blur(8px);
+    font-weight: 600;
+}
+
+.earth-label-card .flag-emoji {
+    font-size: 16px;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+}
+
+#debug-panel {
+    position: absolute;
+    bottom: 25px;
+    left: 25px;
+    background: rgba(0, 0, 0, 0.95);
+    color: #0f0;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #0f0;
+    border-radius: 4px;
+    z-index: 10;
+    max-width: 300px;
+    display: none;
+}
+
+#debug-panel.show {
+    display: block;
+}
+
+#debug-panel div {
+    margin: 2px 0;
+    word-break: break-all;
+}
+
+/* === 响应式优化 === */
+
+@media (max-width: 900px) {
+    .earth-title {
+        font-size: 13px;
+        letter-spacing: 1.5px;
+    }
+
+    #theme-toggle-btn {
+        padding: 6px 10px !important;
+        font-size: 10px !important;
+    }
+
+    #earth-close-btn {
+        padding: 6px 12px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 850px) {
+    .earth-header {
+        padding: 12px 15px;
+    }
+
+    .earth-title {
+        font-size: 12px;
+        letter-spacing: 1px;
+        max-width: 50%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .earth-stats {
+        font-size: 11px;
+        top: 55px;
+    }
+}
+
+@media (max-width: 768px) {
+    .earth-modal-overlay {
+        align-items: flex-end;
+    }
+
+    #earth-drawer-container {
+        width: 100vw;
+        height: 75vh;
+        max-width: none;
+        border-radius: 20px 20px 0 0;
+        border: none;
+        border-top: 2px solid rgba(0, 255, 255, 0.4);
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .earth-modal-overlay.active #earth-drawer-container {
+        transform: translateY(0);
+    }
+
+    .earth-header {
+        padding: 10px 12px;
+    }
+
+    .earth-title {
+        font-size: 12px;
+        letter-spacing: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .earth-stats {
+        font-size: 10px;
+        padding: 6px 10px;
+        top: 50px;
+        left: 10px;
+        max-width: 150px;
+    }
+
+    #theme-toggle-btn {
+        padding: 5px 10px !important;
+        font-size: 10px !important;
+        white-space: nowrap;
+    }
+
+    #earth-close-btn {
+        padding: 5px 12px;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    #earth-toggle-btn {
+        width: 40px;
+        height: 40px;
+        bottom: 80px;
+        right: 15px;
+    }
+
+    #earth-toggle-btn svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .earth-label-card {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .earth-label-card .flag-emoji {
+        font-size: 14px;
+    }
+
+    #debug-panel {
+        font-size: 9px;
+        bottom: 15px;
+        left: 15px;
+        max-width: 250px;
+        max-height: 150px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    #earth-drawer-container {
+        width: 60vw;
+    }
+}
+
+@media (min-width: 1921px) and (max-width: 2560px) {
+    #earth-drawer-container {
+        width: 50vw;
+        border-left-width: 3px;
+    }
+
+    .earth-title {
+        font-size: 22px;
+        letter-spacing: 5px;
+    }
+
+    .earth-stats {
+        font-size: 14px;
+        padding: 16px 22px;
+    }
+
+    #earth-close-btn {
+        padding: 11px 26px;
+        font-size: 15px;
+    }
+}
+
+@media (min-width: 2561px) {
+    #earth-drawer-container {
+        width: 50vw;
+        max-width: 1400px;
+        border-left-width: 4px;
+    }
+
+    .earth-title {
+        font-size: 26px;
+        letter-spacing: 7px;
+    }
+
+    .earth-stats {
+        font-size: 16px;
+        padding: 18px 24px;
+    }
+
+    #earth-close-btn {
+        padding: 12px 30px;
+        font-size: 16px;
+    }
+
+    .earth-label-card {
+        font-size: 15px;
+        padding: 6px 12px;
+    }
+
+    .earth-label-card .flag-emoji {
+        font-size: 20px;
+    }
+}
