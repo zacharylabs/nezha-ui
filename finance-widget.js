@@ -24,7 +24,7 @@
 .finance-ball {
     position: fixed;
     right: 20px;
-    top: 85px;
+    top: 140px;
     width: 46px;
     height: 46px;
     border-radius: 50%;
