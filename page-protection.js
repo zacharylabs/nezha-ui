@@ -24,29 +24,32 @@
     'use strict';
 
     // ========== 配置项 ==========
+    // 从 window.PageProtectionConfig 读取外部配置（在 NezhaUI.html 中设置）
+    const userConfig = window.PageProtectionConfig || {};
+
     const CONFIG = {
         // 是否启用域名限制 (false = 所有域名都生效)
-        enableDomainCheck: false,
-        // 允许的域名列表
-        allowedDomains: ['localhost', '127.0.0.1', 'vps.thesecondbrain.de', 'vps.zacharylabs.com'],
+        enableDomainCheck: userConfig.enableDomainCheck || false,
+        // 允许的域名列表（用户在 NezhaUI.html 中配置）
+        allowedDomains: userConfig.allowedDomains || ['localhost', '127.0.0.1'],
         // 是否显示弹窗提示
-        showAlerts: true,
+        showAlerts: userConfig.showAlerts !== false,
         // 是否禁用右键菜单
-        disableContextMenu: true,
+        disableContextMenu: userConfig.disableContextMenu !== false,
         // 是否禁用文本选择
-        disableTextSelection: true,
+        disableTextSelection: userConfig.disableTextSelection !== false,
         // 是否禁用开发者工具快捷键
-        disableDevTools: true,
+        disableDevTools: userConfig.disableDevTools !== false,
         // 是否禁用拖拽
-        disableDragDrop: true,
+        disableDragDrop: userConfig.disableDragDrop !== false,
         // 是否禁用打印快捷键
-        disablePrint: true,
+        disablePrint: userConfig.disablePrint !== false,
 
         // 频繁违规检测配置 - 严格模式
-        enableViolationDetection: true,    // 是否启用违规检测
-        violationThreshold: 3,              // 违规次数阈值 (3次，更严格)
-        violationTimeWindow: 5000,          // 时间窗口 (ms) - 5秒内 (更短)
-        closePageOnViolation: true          // 达到阈值是否关闭页面
+        enableViolationDetection: userConfig.enableViolationDetection !== false,
+        violationThreshold: userConfig.violationThreshold || 3,
+        violationTimeWindow: userConfig.violationTimeWindow || 5000,
+        closePageOnViolation: userConfig.closePageOnViolation !== false
     };
 
     // ========== 系统检测 ==========
