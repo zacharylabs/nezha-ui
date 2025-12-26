@@ -195,7 +195,7 @@
 #earth-toggle-btn {
     position: fixed;
     right: 20px;
-    top: 140px;
+    top: 85px;
     width: 46px;
     height: 46px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.2) 100%) !important;
