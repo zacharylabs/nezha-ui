@@ -68,7 +68,7 @@
   margin: 0;
   width: fit-content;
   display: inline-block;
-  cursor: pointer;
+  cursor: default;
   position: relative;
 }
 
