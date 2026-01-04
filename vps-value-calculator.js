@@ -39,6 +39,25 @@
     }
     window.vpsValueCalculatorLoaded = true;
 
+    // === 页面可见性监听（修复导航返回后标签消失问题）===
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            // 页面重新可见时，立即检查并修复丢失的标签
+            setTimeout(() => processVPS(false), 10);
+        }
+    });
+
+    // === 路由变化监听（SPA 支持）===
+    let lastUrl = location.href;
+    const routeObserver = new MutationObserver(() => {
+        if (location.href !== lastUrl) {
+            lastUrl = location.href;
+            // 路由变化后快速重新处理
+            setTimeout(() => processVPS(true), 30);
+        }
+    });
+    routeObserver.observe(document.body, { childList: true, subtree: true });
+
     // === CSS 自动注入 ===
     const CSS_STYLES = `
 .vps-value-tag {
@@ -304,6 +323,16 @@ html.dark .vps-tooltip,
         // 修复选择器：支持 bg-card/70 等 Tailwind 语法
         let cards = Array.from(document.querySelectorAll('[class*="bg-card"]:not([data-processed])'));
 
+        // 修复：检测已处理但标签丢失的卡片（SPA 路由变化后可能发生）
+        document.querySelectorAll('[class*="bg-card"][data-processed]').forEach(card => {
+            const hasTag = card.querySelector('.vps-value-tag');
+            if (!hasTag) {
+                // 标签丢失，需要重新处理
+                card.removeAttribute('data-processed');
+                cards.push(card);
+            }
+        });
+
         // 数量限制保护
         if (cards.length > CONFIG.MAX_CARDS) {
             console.warn(`[VPS Calculator] 卡片数量过多 (${cards.length})，仅处理前 ${CONFIG.MAX_CARDS} 个`);
@@ -467,16 +496,16 @@ html.dark .vps-tooltip,
             `📅 <strong>到期:</strong> ${expiryStr}`;
     }
 
-    // === 初始化和观察（优化：防抖+精确监听）===
-    setTimeout(processVPS, 1000);
+    // === 初始化和观察（优化：快速启动）===
+    setTimeout(processVPS, 50);
 
     if (typeof MutationObserver !== 'undefined') {
         // 尝试找到更精确的服务器列表容器
         const serverList = document.querySelector('.server-overview, .server-list, [class*="server-info"]');
         const targetContainer = serverList || document.body;
 
-        // 使用防抖优化性能
-        const debouncedProcess = debounce(processVPS, 500);
+        // 使用防抖优化性能（减少延迟）
+        const debouncedProcess = debounce(processVPS, 80);
 
         new MutationObserver(() => debouncedProcess())
             .observe(targetContainer, {
