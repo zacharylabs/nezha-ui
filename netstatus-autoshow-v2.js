@@ -1,7 +1,7 @@
 // ==UserScript==
 // @version      2.3
 // @description  哪吒详情页直接展示网络波动卡片（网络延迟置顶 + 液态玻璃控件适配版）
-// @author       Modified based on nodeseek post
+// @author       https://www.nodeseek.com/post-349102-1
 // ==/UserScript==
 
 (function () {
